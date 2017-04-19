@@ -1,0 +1,7 @@
+CS4242_Assg2/Archive.zip
+
+# Ignore IDE files
+.idea/*
+
+# Ignore system files
+.DS_Store

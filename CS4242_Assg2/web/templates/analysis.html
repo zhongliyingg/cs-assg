@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block main %}
+<div id="main_part_inner">
+	<div id="main_part_inner_in">
+
+		<h2>Analysis</h2>
+
+	</div>
+
+</div>
+{% endblock %}
+{% block content %}
+{% url "submitanalysis" as submit_url %}
+{% url "deletesvm" as delete_svm_url %}
+<h3></h3>
+<div id="content_inner">
+	
+		{% csrf_token %}
+		<h7>
+			Available categories:
+		</h7>
+		<br/>
+		{% for svm in svmlist %}
+		<div style="border:1px solid; border-radius: 4px; background: rgb(190, 219, 218); display:inline-block;">{{svm}} 
+			<button onclick="window.location='{{delete_svm_url}}?svm_name={{svm}}';">X</button></div>
+		{% endfor %}
+		<br/><br/>
+	
+</div>
+<form action="{{ submit_url }}" method="post" class="formit" enctype="multipart/form-data"
+style="display:block; text-align:center;" target="submit-iframe">
+	{% csrf_token %}
+	<br/>
+	{{ form.file_data.label}}&nbsp;&nbsp;
+	{{ form.file_data }}
+	<br/>
+	<br/>
+	{{ form.file_groundtruth.label}}&nbsp;&nbsp;
+	{{ form.file_groundtruth }}
+	<br/>
+	<br/>
+	<div class="button_main">
+		<input type="submit" id="submitbutton" class="button_submit" value="GO">
+	</div>
+</form>
+
+<iframe id="invis-iframe" name='submit-iframe' style='display: none;'></iframe>
+
+{% endblock %}
+
+{% block scripts_end %}
+{% url "results" as results_url %}
+<script>
+	var jobid = "";
+	function updateStatusMessage(data) {
+		console.log(data);
+		$('#polling_text').html(data[0]["status"]);
+		if (data[0]["status"] == "Completed!") {
+			window.location.href = "{{ results_url }}?jobid=" + jobid;
+		}
+	}
+	
+	$('#invis-iframe').load(function() {
+		var responseText = $('#invis-iframe').contents().find('body').html();
+	
+		if (!responseText) {
+			return;
+		}
+
+	// Clear the content of the iframe.
+		$('#invis-iframe').empty();
+		
+		json_resp = JSON.parse(responseText);
+		console.log(json_resp);
+		if (json_resp['type'] == "ok"){
+			$('.fadeMe').css({"visibility": 'visible'});
+			$('#overlay').css({"visibility": 'visible'});
+			$('#polling_text2').css({"visibility": 'hidden'});
+			$('#polling_text').css({"visibility": 'visible'});
+			jobid = json_resp['message'];
+			window.setInterval(function(){
+				Dajaxice.web.getStatus(updateStatusMessage, {'job_id': jobid});
+			}, 2000);
+	
+		}else if (json_resp['type'] == "error"){
+			alert(json_resp['message']);
+		}
+	});
+	
+	$("#submitbutton").on("click", function() {
+		$("body").scrollTop(0);
+	});
+</script>
+{% endblock %}

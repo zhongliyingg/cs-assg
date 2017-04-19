@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block main %}
+<div id="main_part_inner">
+	<div id="main_part_inner_in">
+		<h2>Results for Analysis</h2>
+	</div>
+
+</div>
+{% endblock %}
+
+{% block content %}
+
+<h3>Select Result Set:</h3>
+<div class="joblist">
+	<select id="jobselect">
+		<option value="none">----------</option>
+		{% for item in joblist %}
+		<option value="{{ item.job_id }}">{{ item.job_id }} - {{ item.date }}</option>
+		{% endfor %}
+	</select>
+</div>
+
+<br/>
+
+{% if svmresults|length != 0 %}
+{% if gt == False %}
+<div style='margin-left:30px;'>
+
+	{% url "resultsgt" as resultsgt_url %}
+	<h3>Upload Ground Truth:</h3>
+	
+	<form action="{{ resultsgt_url }}" enctype="multipart/form-data" class="formit" method="post">
+		{% csrf_token %}
+		{{form.as_p}}
+		<br/>
+		<br/>
+		<input class="button_submit" type="submit" value="Submit" />
+	</form>
+</div>
+{% else %}
+
+<h3>Ground Truth Evaluation:</h3>
+<table class="gridtable">
+	<tr>
+		<th></th>
+		{% for category in categorieslist %}
+		<th>{{ category }}</th>
+		{% endfor %}
+	</tr>
+	{% for category, resultlist in eval_result.items %}
+	<tr>
+		<td colspan=6 style="background: rgba(196, 196, 196, 0.18);">
+			{{ category }}
+		</td>
+	</tr>
+	<tr>
+		<td>True Positive</td>
+		<td>{{ resultlist.positive.true_positive }}</td>
+		<td>{{ resultlist.neutral.true_positive }}</td>
+		<td>{{ resultlist.negative.true_positive }}</td>
+	</tr>
+	<tr>
+		<td>True Negative</td>
+		<td>{{ resultlist.positive.true_negative }}</td>
+		<td>{{ resultlist.neutral.true_negative }}</td>
+		<td>{{ resultlist.negative.true_negative }}</td>
+	</tr>
+	<tr>
+		<td>False Positives</td>
+		<td>{{ resultlist.positive.false_positive }}</td>
+		<td>{{ resultlist.neutral.false_positive }}</td>
+		<td>{{ resultlist.negative.false_positive }}</td>
+	</tr>
+	<tr>
+		<td>False Negatives</td>
+		<td>{{ resultlist.positive.false_negative }}</td>
+		<td>{{ resultlist.neutral.false_negative }}</td>
+		<td>{{ resultlist.negative.false_negative }}</td>
+	</tr>
+	<tr>
+		<td>Precision</td>
+		<td>{{ resultlist.positive.precision }}</td>
+		<td>{{ resultlist.neutral.precision }}</td>
+		<td>{{ resultlist.negative.precision }}</td>
+	</tr>
+	<tr>
+		<td>Recall</td>
+		<td>{{ resultlist.positive.recall }}</td>
+		<td>{{ resultlist.neutral.recall }}</td>
+		<td>{{ resultlist.negative.recall }}</td>
+	</tr>
+	<tr>
+		<td>F1</td>
+		<td>{{ resultlist.positive.f_one }}</td>
+		<td>{{ resultlist.neutral.f_one }}</td>
+		<td>{{ resultlist.negative.f_one }}</td>
+	</tr>
+	{% endfor %}
+</table>
+{% endif %}
+
+<h3>Features Used:</h3>
+<table class="gridtable">
+	<tr>
+		<th>Features</th>
+	</tr>
+	{% for feature in features_enabled %}
+	<tr>
+		<td>{{feature}}</td>
+	</tr>
+	{% endfor %}
+</table>
+
+<div id="tablewrapper">
+	<table class="gridtable">
+		<tr>
+			<th></th>
+			<th>Tweet</th>
+			{% for category in categorieslist %}
+			<th>{{ category }}</th>
+			{% endfor %}
+			{% if gt == True %}
+			<th>Remarks</th>
+			{% endif %}
+		</tr>
+		{% for key, resultlist in svmresults.items %}
+			{% if gt == True %}
+			<tr><td colspan=6 style="background: rgba(196, 196, 196, 0.18);">{{ key }}</td></tr>
+			{% else %}
+			<tr><td colspan=5 style="background: rgba(196, 196, 196, 0.18);">{{ key }}</td></tr>
+			{% endif %}
+			{% for result in resultlist %}
+			{% if gt == True %}
+				{% if result.remarks == "correct" %}
+				<tr class="correct">
+				{% else %}
+				<tr class="wrong">
+				{% endif %}
+			{% else %}
+			<tr>	
+			{% endif %}
+			
+				<td>{{ forloop.counter }}</td>
+				<td>{{ result.tweet_full }}</td>
+				<td>{{ result.positive }}</td>
+				<td>{{ result.neutral }}</td>
+				<td>{{ result.negative }}</td>
+				{% if gt == True %}
+				<td>{{ result.remarks }}</td>
+				{% endif %}
+			</tr>
+			{% endfor %}
+		{% endfor %}
+	</table>
+
+</div>
+
+{% endif %}
+{% endblock %}
+
+{% block scripts_end %}
+{% url "results" as results_url %}
+<script>
+
+	$(function() {
+		$('#jobselect').bind('change', function() {
+		var val = $(this).val(); // get selected value
+			if (val != "none") {
+				var url = '{{results_url}}' + '?jobid=' + val;
+					if (url) { // require a URL
+					window.location = url; // redirect
+					}
+				}
+			return false;
+		});
+});
+</script>
+{% endblock %}

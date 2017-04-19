@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block main %}
+<!-- *********  Main part (slider)  ********** -->
+{% url "submitcat" as submitupload_url %}
+<div class="silhouette">
+	<div id="main_part">
+		<div id="main_part_in">
+
+			<h2>Sentimental Analysis <b>V1</b></h2>
+
+			<p>
+				Upload your file to begin
+			</p>
+			<br/>
+		</div>
+
+		<form action="{{ submitupload_url }}" method="post" class="formit" enctype="multipart/form-data"
+		style="display:block; text-align:center;" target="submit-iframe">
+			{% csrf_token %}
+			
+			<br/>
+			<div id="upload_form_label">
+				Tweet File:
+				{{ form.file_data }}
+			</div>
+			<font color="#c94663">{{ form.file_data.errors }}</font>
+			<br/>
+			<div id="upload_form_label">
+				Groundtruth File:
+				{{ form.file_groundtruth }}
+			</div>
+			<font color="#c94663">{{ form.file_groundtruth.errors }}</font>
+			<br/>
+			<label>{{ form.options.label }}</label>
+			{{ form.options }}<br/>
+			{{ form.options.errors }}
+			<div class="button_main">
+				<input type="submit" id="submitbutton" class="button_submit" value="UPLOAD">
+			</div>
+		</form>
+
+		<iframe id="invis-iframe" name='submit-iframe' style='display: none;'></iframe>
+
+	</div>
+</div>
+{% endblock %}
+
+{% block scripts_end %}
+{% url "analysis" as analysis_url %}
+<script>
+	window.done1=false;
+	window.done2=false;
+	function updateStatusMessage(data){
+		console.log(data);
+		$('#polling_text').html("Classifier Status: " + data[0]["status"]);
+		if (data[0]["status"] == "Completed!"){
+			window.done1 = true;
+			if (window.done1 && window.done2)
+				window.location.href= "{{ analysis_url }}";
+		}else{
+			
+		}
+
+	}
+	
+	function updateStatusMessageSA(data){
+		console.log(data);
+		$('#polling_text2').html("Sentimental Analysis Status: " + data[0]["status"]);
+		if (data[0]["status"] == "Completed!"){
+			window.done2 = true;
+			if (window.done1 && window.done2)
+				window.location.href= "{{ analysis_url }}";
+		}else{
+			
+		}
+
+	}
+
+	$('#invis-iframe').load(function() {
+		var responseText = $('#invis-iframe').contents().find('body').html();
+	
+		if (!responseText) {
+			return;
+		}
+
+		// Clear the content of the iframe.
+		$('#invis-iframe').empty();
+		
+		json_resp = JSON.parse(responseText);
+		console.log(json_resp);
+		if (json_resp['type'] == "ok"){
+			$('.fadeMe').css({"visibility": 'visible'});
+			$('#overlay').css({"visibility": 'visible'});
+			$('#polling_text').css({"visibility": 'visible'});
+			$('#polling_text2').css({"visibility": 'visible'});
+			var job_id = json_resp['message'];
+			var job_id_sa = json_resp['message2'];
+			window.setInterval(function(){Dajaxice.web.getStatus(updateStatusMessage, {'job_id': job_id});}, 2000);
+			window.setInterval(function(){Dajaxice.web.getStatusSA(updateStatusMessageSA, {'job_id': job_id_sa});}, 2000);
+	
+		}else if (json_resp['type'] == "error"){
+			alert(json_resp['message']);
+		}
+	});
+	
+	$("#submitbutton").on("click", function() {
+		$("body").scrollTop(0);
+	});
+</script>
+{% endblock %}

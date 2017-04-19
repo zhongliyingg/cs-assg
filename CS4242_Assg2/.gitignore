@@ -1,0 +1,8 @@
+.project
+.pydevproject
+.settings
+*.pyc
+Archive.zip
+
+# Ignore deployment instructions
+Deployment Instructions KC
